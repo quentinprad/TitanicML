@@ -1,7 +1,6 @@
 from numpy import *
 from sklearn import cross_validation
 import csv as csv
-from classify import classify
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -49,7 +48,7 @@ full['FamilyName'] = full.Name.str.extract(' ([A-Za-z]+),', expand = False)
 full['Title'].value_counts()
 
 # Transform different titles with int
-full['Title'] = full['Title'].map({'Mr' : 0, 'Miss' : 1, 'Mrs' : 2, 'Capt' : 3, 'Col' : 4, 'Don' : 5, 'Dr' : 6, 'Jonkheer' : 7, 'Major' : 8, 'Sir' : 9, 'Dona' : 10, 'Lady' : 11, 'Mlle' : 12, 'Ms' : 13, 'Countess' : 14, 'Mme' : 15, 'Master' : 16, 'Rev' : 17}).astype(int)
+full['Title'] = full['Title'].map({'Mr' : 0, 'Miss' : 1, 'Mrs' : 2, 'Master' : 3, 'Col' : 4, 'Don' : 4, 'Dr' : 4, 'Jonkheer' : 4, 'Major' : 4, 'Sir' : 4, 'Dona' : 4, 'Lady' : 4, 'Mlle' : 4, 'Ms' : 4, 'Countess' : 4, 'Mme' : 4, 'Capt' : 4, 'Rev' : 4}).astype(int)
 
 # Check visually if Titles seem to be linked with survival
 SurvivalByTitle = full['Title'].corr(full['Survived'])
@@ -59,7 +58,8 @@ for key, item in SurvivalbyTitle:
     print(SurvivalbyTitle.get_group(key), "\n\n")
 
 # Transform missing ages with the mean of similar passengers
-full['Age'] = full.groupby(['Pclass', 'Title'])['Age'].transform(lambda x: x.fillna(x.mean()))
+full['Age'] = full.groupby(['Pclass', 'Title'])['Age'].transform(lambda x: x.fillna(x.median()))
+full['Age'].median()
 
 # Transform Cabin Codes with numbers
 full['CabinCode'].value_counts()
@@ -73,13 +73,20 @@ full['Embarked'] = full['Embarked'].map({'S' : 0, 'C' : 1, 'Q' : 2}).astype(int)
 full.drop(['Cabin', 'FamilyName', 'Name', 'Ticket', 'PassengerId'], axis=1, inplace=True)
 
 # Separate test and train set from the cleaned full set
-
 full = full.convert_objects(convert_numeric = True)
 full = full.values 
 
 X_train = full[:891, :]
 X_test = full[891:, :]
 Y_train = X_train[:, 5] # Survived column
+
+X_train = delete(X_train, 5, 1)
+X_test = delete(X_test, 5, 1)
+
+# After analysis, we discovered that the four most important features were
+
+X_train = delete(X_train, 1, 1)
+X_test = delete(X_test, 1, 1)
 
 X_train = delete(X_train, 5, 1)
 X_test = delete(X_test, 5, 1)
@@ -100,7 +107,7 @@ for trainIndex, testIndex in kf:
     trainLabels = Y_train[trainIndex]
     testLabels = Y_train[testIndex]
 	
-    predictedLabels = knn(trainSet, trainLabels, testSet)
+    predictedLabels = RandomForest(trainSet, trainLabels, testSet)
 
     correct = 0	
     for i in range(testSet.shape[0]):
@@ -112,4 +119,4 @@ for trainIndex, testIndex in kf:
     totalInstances += testLabels.size
 print 'Total Accuracy: ' + str(totalCorrect/float(totalInstances))
 	
-
+RandomForestFeatures(trainSet, trainLabels, testSet)
