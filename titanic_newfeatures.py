@@ -4,6 +4,13 @@ Created on Thu Nov 22 15:44:48 2018
 
 @author: Rebecca
 """
+from numpy import *
+from sklearn import cross_validation
+import csv as csv
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from models import *
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -34,8 +41,39 @@ full.describe()
 #create title column and fix rare titles
 full['Title'] = full['Name'].str.split(", ", expand=True)[1].str.split(".", expand=True)[0]
 print(full['Title'].value_counts()) #keep Mr,Miss,Mrs,Master
-full.replace({'Title':{'Mlle': 'Miss', 'Ms': 'Miss','Mme':'Mrs'}})
-full.replace({'Title':{'Dona': 'rare_title', 'Lady': 'rare_title','the Countess':'rare_title','Capt':'rare_title','Col':'rare_title','Don':'rare_title','Dr':'rare_title','Major':'rare_title','Rev':'rare_title','Sir':'rare_title','Jonkheer':'rare_title'}})  
+
+
+def title(i):
+    if full['Title'][i]=='Miss':
+        full['Title'][i]=1
+
+    if full['Title'][i]=='Mrs':
+        full['Title'][i]=2
+        
+    if full['Title'][i]=='Mister':
+        full['Title'][i]=3
+            
+    if full['Title'][i]=='Master':
+        full['Title'][i]=4
+def title2(i):
+    if (full['Title'][i]!=1)& (full['Title'][i]!=2) & (full['Title'][i]!=3) & (full['Title'][i]!=4):
+        full['Title'][i]=5
+
+
+
+for i in range(len(full)):
+    title(i)
+    
+    
+for i in range(len(full)):
+   title2(i)   
+   
+
+    
+# Transform missing ages with the mean of similar passengers
+full['Age'] = full.groupby(['Pclass', 'Title'])['Age'].transform(lambda x: x.fillna(x.median()))
+full['Age'].median()
+
 
 #exctract surname from name
 full['Surname'] = full['Name'].apply(lambda x: str(x).split('.')[0].split(' ')[0])
@@ -101,7 +139,7 @@ for i in range(len(full)):
     mother(i)
     
 
-full['Mother'] #i made itttttttttttt
+full['Mother'] 
 
 #create age times class feature
 full['age_times_class']=full['Age']*full['Pclass']
@@ -115,25 +153,13 @@ for i in range(len(full)):
         full['Sex'][i]=1
     
 
+# Fill the missing value for fare with median value and for embarked with C based on the fare
+full['Fare'] = full.groupby(['Pclass'])['Fare'].transform(lambda x: x.fillna(x.median()))
+full['Embarked'][61] = 'C'
+full['Embarked'][829] = 'C'
+full['Embarked'].value_counts()
 
-#discretize fare
-def fare(i):    
-    for i in range(len(full)):
-        if full['Fare'][i]<=7.91:
-            full['Fare'][i]=0
-        if full['Fare'][i]>7.91:
-                if full['Fare'][i]<=14.454:
-                    full['Fare'][i]=1
-        if full['Fare'][i]>14.454:
-            if full['Fare'][i]<31:
-                full['Fare'][i]=2
-        if full['Fare'][i]>31:
-            full['Fare'][i]=3
-                                
-for i in range(len(full)):
-    fare(i)
 
-print(full['Fare']) 
 
 def embarked(dataset):
     # embarked {S, C, Q} => 3 binary variables, dummies 
@@ -143,34 +169,24 @@ def embarked(dataset):
  
 full = embarked(full) 
 full.head()
+
+
+full.drop(['Cabin', 'Surname', 'Name', 'Ticket', 'PassengerId'], axis=1, inplace=True)
+
+
+
+
 #correlations
+
 corr =full.corr()
 print(corr)
+#survived is particularly tied to fare, child, mother, class(negatively), age times class (negatively),embarked c and s (s, negatively)
+
+
+full.to_csv("C:\\Users\\Rebecca\\Desktop\\machinelearning\\titanic\\full.csv")
+
 
 import seaborn as sns
 import matplotlib.pyplot as plt
  
 sns.heatmap(np.abs(corr),xticklabels=corr.columns,yticklabels=corr.columns)
-
-
-#decision tree for age or we're using the median?
-target = full["Age"].values
-features_one = full[["Pclass", "Sex", "Child", "Family_size","Fare","Parch","SibSp","Mother","age_times_class"]].values
-
-#fitting the decision tree
-nkd_tree = tree.DecisionTreeClassifier()
-nkd_tree = nkd_tree.fit(features_one, target)
-    
-#observing the importance and score of the features
-print(nkd_tree.feature_importances_)
-print(nkd_tree.score(features_one, target))
-
-
-
-#plots
-bins = np.linspace(0, 80, 35)
-
-# Two subplots, unpack the axes array immediately
-
-
-
