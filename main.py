@@ -79,7 +79,7 @@ full['CabinCode'] = full['CabinCode'].map({'U' : 0, 'C' : 1, 'B' : 2, 'D' : 3, '
 # Transform Embarked column with numbers
 full['Embarked'].value_counts()
 full['Embarked'] = full['Embarked'].map({'S' : 0, 'C' : 1, 'Q' : 2}).astype(int)
-full = pd.get_dummies(full, prefix = 'dummy_Embarked', columns = ['Embarked'], drop_first = True)
+# full = pd.get_dummies(full, prefix = 'dummy_Embarked', columns = ['Embarked'], drop_first = True)
 
 # Transform Title column to dummy
 full = pd.get_dummies(full, prefix = 'dummy_Title', columns = ['Title'], drop_first = True)
@@ -93,6 +93,10 @@ full['AgeBin'] = full['AgeBin'].astype(int)
 # Check if there are nan values remaining / 418 are normal (test set survived column), 1 is not normal 
 full.isnull().values.any()
 full.isnull().sum().sum()
+
+full = full.drop('AgeBin', 1)
+full = full.drop('Embarked', 1)
+full = full.drop('FamilySize', 1)
 
 # Save the cleaned dataframe as a csv file
 full.to_csv("dfTitanicCleanFull.csv", sep = ',')
@@ -141,7 +145,7 @@ for trainIndex, testIndex in kf:
     trainLabels = Y_train[trainIndex]
     testLabels = Y_train[testIndex]
 	
-    predictedLabels = RandomForest(trainSet, trainLabels, testSet)
+    predictedLabels = RandomForestWithFeatureSelection(trainSet, trainLabels, testSet)
 
     correct = 0	
     for i in range(testSet.shape[0]):
@@ -159,7 +163,7 @@ Y_predict = zeros((418, 2))
 for i in range(0, 418):
     Y_predict[i, 0] = 892 + i
     Y_train = Y_train.astype(float)
-Y_predict[:, 1] = RandomForest(X_train, Y_train, X_test)
+Y_predict[:, 1] = RandomForestWithFeatureSelection(X_train, Y_train, X_test)
 
 Y_predict = Y_predict.astype(int)
 
