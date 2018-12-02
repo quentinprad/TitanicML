@@ -56,7 +56,7 @@ def DecisionTreeWithFeatureSelection(trainSet, trainLabels, testSet):
 
 def RandomForest(trainSet, trainLabels, testSet):
     
-    clf = RandomForestClassifier(n_estimators = 50, max_features = 'log2', bootstrap = False, max_depth = 10, min_samples_leaf = 4, random_state = 0)
+    clf = RandomForestClassifier(n_estimators = 50, bootstrap = False, max_depth = 10, min_samples_leaf = 4, random_state = 0)
     clf.fit(trainSet, trainLabels)
 
     predictedLabels = clf.predict(testSet)
@@ -83,7 +83,7 @@ def RandomForestFeatures(trainSet, trainLabels, testSet):
 
     # Plot the feature importances of the forest
     plt.figure()
-    plt.title("Feature importances")
+    plt.title("Feature importances for Random Forest")
     plt.bar(range(trainSet.shape[1]), importances[indices], color="r", yerr=stddev[indices], align="center")
     plt.xticks(range(trainSet.shape[1]), indices)
     plt.xlim([-1, trainSet.shape[1]])
@@ -92,7 +92,7 @@ def RandomForestFeatures(trainSet, trainLabels, testSet):
 
 def RandomForestWithFeatureSelection(trainSet, trainLabels, testSet):
 
-   clf = RandomForestClassifier(n_estimators = 450, max_features = 'log2', bootstrap = False, max_depth = 75, min_samples_leaf = 4)
+   clf = RandomForestClassifier(n_estimators = 50, bootstrap = False, max_depth = 10, min_samples_leaf = 4, random_state = 0)
    # Create a selector object that will use the random forest classifier to identify
    
    # features that have an importance of more than 0.15
@@ -110,16 +110,67 @@ def RandomForestWithFeatureSelection(trainSet, trainLabels, testSet):
 
    return predictedLabels
 
+def RandomForestTuning(trainSet, trainLabels, testSet):
+    import numpy as np
+# Number of trees in random forest
+    n_estimators = [int(x) for x in np.linspace(start = 150, stop = 450, num = 10)]
+# Number of features to consider at every split
+    max_features = ['auto', 'log2']
+# Maximum number of levels in tree
+    max_depth = [int(x) for x in np.linspace(10, 110, num = 21)]
+    max_depth.append(None)
+    
+# Minimum number of samples required at each leaf node
+    min_samples_leaf = [1, 2, 4]
+# Method of selecting samples for training each tree
+    bootstrap = [True, False]
+# Create the random grid
+    random_grid = {'n_estimators': n_estimators,
+               'max_features': max_features,
+               'max_depth': max_depth,
+               'min_samples_leaf': min_samples_leaf,
+               'bootstrap': bootstrap}
+
+# Use the random grid to search for best hyperparameters
+# First create the base model to tune
+    rf = RandomForestRegressor()
+
+    rf_random = RandomizedSearchCV(estimator = rf, param_distributions = random_grid, n_iter = 100, cv = 2, verbose=2, random_state=42, n_jobs = -1)
+# Fit the random search model
+    rf_random.fit(trainSet, trainLabels)
+    
+    print('best params = ', rf_random.best_params_)
+
+    return rf_random.best_params_
+
 
 def LogReg(trainSet, trainLabels, testSet):
 
     # Train 
-    clf = LogisticRegression(C = 1e12, penalty = 'l2', random_state= 33)
+    clf = LogisticRegression(C = 1.0, penalty = 'l1')
     clf.fit(trainSet,trainLabels)
     predictedLabels = clf.predict(testSet)
 
     return predictedLabels
 
+def LogRegTuned(trainSet, trainLabels, testSet):
+    
+    # Create regularization penalty space, hyperparameter space and then Create hyperparameter options
+    penalty = ['l1', 'l2']
+    C = logspace(0, 4, 10)
+    hyperparameters = dict(C=C, penalty=penalty)
+    
+    # Use Gridsearch to find best hyperparameters
+    clf = GridSearchCV(LogisticRegression(), hyperparameters, cv=5, verbose=0)
+    best_model = clf.fit(trainSet, trainLabels)
+    
+    # View best hyperparameters
+    print('Best Penalty:', best_model.best_estimator_.get_params()['penalty'])
+    print('Best C:', best_model.best_estimator_.get_params()['C'])
+    
+    predictedLabels = best_model.predict(testSet)
+    
+    return predictedLabels
 
 def Knn(trainSet, trainLabels, testSet):
     
@@ -145,43 +196,6 @@ def Boosting(trainSet, trainLabels, testSet):
     predictedLabels = clf.predict(testSet)
     
     return predictedLabels
-
-
-def tuning(trainSet, trainLabels, testSet):
-    import numpy as np
-# Number of trees in random forest
-    n_estimators = [int(x) for x in np.linspace(start = 150, stop = 450, num = 10)]
-# Number of features to consider at every split
-    max_features = ['auto', 'log2']
-# Maximum number of levels in tree
-    max_depth = [int(x) for x in np.linspace(10, 110, num = 21)]
-    max_depth.append(None)
-# Minimum number of samples required to split a node
-    # 'min_samples_split': min_samples_split,min_samples_split = 0.5
-    
-# Minimum number of samples required at each leaf node
-    min_samples_leaf = [1, 2, 4]
-# Method of selecting samples for training each tree
-    bootstrap = [True, False]
-# Create the random grid
-    random_grid = {'n_estimators': n_estimators,
-               'max_features': max_features,
-               'max_depth': max_depth,
-               'min_samples_leaf': min_samples_leaf,
-               'bootstrap': bootstrap}
-
-# Use the random grid to search for best hyperparameters
-# First create the base model to tune
-    rf = RandomForestRegressor()
-# Random search of parameters, using 3 fold cross validation, 
-# search across 100 different combinations, and use all available cores
-    rf_random = RandomizedSearchCV(estimator = rf, param_distributions = random_grid, n_iter = 100, cv = 2, verbose=2, random_state=42, n_jobs = -1)
-# Fit the random search model
-    rf_random.fit(trainSet, trainLabels)
-    
-    print('best params = ', rf_random.best_params_)
-
-    return rf_random.best_params_
 
     
 def averageModels(trainSet, trainLabels, testSet):
